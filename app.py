@@ -18,8 +18,8 @@ app = Flask(__name__)
 # ---------------------------------------------------------
 # 👉 在這裡填入自己的 Channel Access Token / Secret
 # ---------------------------------------------------------
-CHANNEL_ACCESS_TOKEN = "你的_LINE_CHANNEL_ACCESS_TOKEN"
-CHANNEL_SECRET = "你的_LINE_CHANNEL_SECRET"
+CHANNEL_ACCESS_TOKEN = "Km98R7jo9qa8ne8eBniDIRIEwQ2De0CAj7E8EKQam8ib2NwiYv/mdQ8VY2nA3dO96aFA0a1w8Wr3ZNcPFQyVG8cSaTKygfaJoOHWhSwVf1km13rqruY9oADAl1YNxJ6JMmQ1/IZDtVXnP68XYL7vuwdB04t89/1O/w1cDnyilFU="
+CHANNEL_SECRET = "46462ff62aa2638260553fa5a8a86eaf"
 # ---------------------------------------------------------
 
 
