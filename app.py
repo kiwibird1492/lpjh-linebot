@@ -16,12 +16,11 @@ import os
 app = Flask(__name__)
 
 # ---------------------------------------------------------
-# 👉 在這裡填入自己的 Channel Access Token / Secret
+# 👉 填入你自己的 Channel Secret / Access Token
 # ---------------------------------------------------------
 CHANNEL_ACCESS_TOKEN = "Km98R7jo9qa8ne8eBniDIRIEwQ2De0CAj7E8EKQam8ib2NwiYv/mdQ8VY2nA3dO96aFA0a1w8Wr3ZNcPFQyVG8cSaTKygfaJoOHWhSwVf1km13rqruY9oADAl1YNxJ6JMmQ1/IZDtVXnP68XYL7vuwdB04t89/1O/w1cDnyilFU="
 CHANNEL_SECRET = "46462ff62aa2638260553fa5a8a86eaf"
 # ---------------------------------------------------------
-
 
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
@@ -44,7 +43,7 @@ def callback():
 
 
 # ---------------------------------------------------------
-# 1️⃣ 文字訊息（查詢 + 顯示主選單）
+# 1️⃣ 文字訊息（關鍵字分類 + 搜尋）
 # ---------------------------------------------------------
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
@@ -59,10 +58,10 @@ def handle_message(event):
         )
         return
 
-    # 根據輸入文字自動判斷分類
+    # 自動判斷分類
     category = detect_category(user_text)
 
-    # 搜尋該分類
+    # 搜尋資料
     items = search_school(category, keyword=user_text)
 
     # 回傳 Flex 結果卡片
@@ -73,19 +72,17 @@ def handle_message(event):
 
 
 # ---------------------------------------------------------
-# 2️⃣ 按鈕按下（postback）事件 → 搜尋該分類
+# 2️⃣ Postback（按按鈕選擇分類）
 # ---------------------------------------------------------
 @handler.add(PostbackEvent)
 def handle_postback(event):
-    data = event.postback.data  # 例如 "category=校務布告欄"
+    data = event.postback.data
 
     if data.startswith("category="):
         category = data.replace("category=", "")
 
-        # 搜尋資料
         items = search_school(category)
 
-        # 回覆 Flex 結果
         line_bot_api.reply_message(
             event.reply_token,
             flex_article_list(category, items)
@@ -93,8 +90,7 @@ def handle_postback(event):
 
 
 # ---------------------------------------------------------
-# 主程式
+# 主程式（本機測試）
 # ---------------------------------------------------------
 if __name__ == "__main__":
-    # 本機測試用（正式部署會用 WSGI）
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000)
