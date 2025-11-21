@@ -1,4 +1,15 @@
 import requests
+from google.cloud import firestore
+from bs4 import BeautifulSoup
+import datetime
+import time
+
+# -------------------------------
+# 🔥 Firebase 初始化
+# -------------------------------
+db = firestore.Client.from_service_account_json("lpjh-bot-firebase-adminsdk-fbsvc-18c4745b55.json")
+
+
 
 BASE_URL = "https://lpjh.ylc.edu.tw"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
@@ -14,7 +25,6 @@ CATEGORY_API = {
     "課後社團": "students-affairs",
 }
 
-
 def full_url(href):
     if href.startswith("http"):
         return href
@@ -22,9 +32,6 @@ def full_url(href):
 
 
 def fetch_page_items(category_key, page=1):
-    """
-    使用 API 抓公告（不再抓 HTML）
-    """
     api_path = CATEGORY_API.get(category_key)
     if not api_path:
         return []
@@ -42,18 +49,34 @@ def fetch_page_items(category_key, page=1):
     for row in data.get("data", []):
         items.append({
             "title": f"{row.get('date', '')} {row.get('title', '')}",
-            "url": full_url(row.get("url", ""))
+            "url": full_url(row.get("url", "")),
         })
 
-    return items
-
-
-def search_school(category, keyword=""):
-    # 直接抓 API 第一頁資料
-    items = fetch_page_items(category, page=1)
-
-    # 關鍵字過濾
-    if keyword:
-        items = [i for i in items if keyword in i["title"]]
-
     return items[:10]
+
+
+def update_firestore():
+    print("開始更新公告資料...")
+
+    for category in CATEGORY_API.keys():
+        print(f"正在抓取：{category}")
+        items = fetch_page_items(category)
+
+        db.collection("lpjh").document(category).set({
+            "updated": datetime.datetime.now(),
+            "items": items
+        })
+
+        print(f"✔ 已更新：{category}")
+
+    print("🔥 所有公告更新完成！")
+
+
+# -------------------------------
+# 🔥 每 5 分鐘自動更新一次
+# -------------------------------
+if __name__ == "__main__":
+    while True:
+        update_firestore()
+        print("等待 5 分鐘後再次更新...\n")
+        time.sleep(300)
