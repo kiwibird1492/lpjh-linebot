@@ -3,7 +3,7 @@ from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
+    MessageEvent, TextMessage,
     PostbackEvent
 )
 
@@ -28,14 +28,18 @@ CHANNEL_SECRET = "46462ff62aa2638260553fa5a8a86eaf"
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
+
 # ---------------------------------------------------------
 # 👉 Firestore 初始化
 # ---------------------------------------------------------
-
-# Render 的 Secret Files 會掛在 /etc/secrets 下
 CRED_PATH = "/etc/secrets/firebase-key.json"
 
 if not firebase_admin._apps:
+    if not os.path.exists(CRED_PATH):
+        print("❌ Firebase 金鑰不存在：", CRED_PATH)
+    else:
+        print("✅ Firebase 金鑰已找到：", CRED_PATH)
+
     cred = credentials.Certificate(CRED_PATH)
     firebase_admin.initialize_app(cred)
 
@@ -43,7 +47,7 @@ db = firestore.client()
 
 
 # ---------------------------------------------------------
-# ⭐ 從 Firestore 讀資料
+# ⭐ Firestore 讀資料
 # ---------------------------------------------------------
 def read_from_firestore(category):
     doc_ref = db.collection("lpjh").document(category).get()
@@ -71,7 +75,7 @@ def callback():
 
 
 # ---------------------------------------------------------
-# 1️⃣ 文字訊息：自動分類 + Firestore 查詢
+# 1️⃣ 文字訊息：分類 + Firestore
 # ---------------------------------------------------------
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
@@ -89,14 +93,14 @@ def handle_message(event):
     # 自動判斷分類
     category = detect_category(user_text)
 
-    # 從 Firestore 抓資料
+    # Firestore 查資料
     items = read_from_firestore(category)
 
-    # 關鍵字篩選
+    # 若使用者輸入關鍵字 → 過濾
     if user_text not in ["選單", category]:
         items = [i for i in items if user_text in i["title"]]
 
-    # 回傳 Flex 卡片
+    # 回傳 Flex
     line_bot_api.reply_message(
         event.reply_token,
         flex_article_list(category, items)
@@ -104,7 +108,7 @@ def handle_message(event):
 
 
 # ---------------------------------------------------------
-# 2️⃣ 按鈕 Postback → Firestore 搜尋
+# 2️⃣ Postback 按鈕
 # ---------------------------------------------------------
 @handler.add(PostbackEvent)
 def handle_postback(event):
@@ -112,7 +116,6 @@ def handle_postback(event):
 
     if data.startswith("category="):
         category = data.replace("category=", "")
-
         items = read_from_firestore(category)
 
         line_bot_api.reply_message(
@@ -125,4 +128,5 @@ def handle_postback(event):
 # 主程式（本機測試）
 # ---------------------------------------------------------
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
